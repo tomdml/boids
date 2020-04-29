@@ -1,8 +1,10 @@
+import bisect
 import math
+import operator
 
 import pygame
 
-import utils
+from utils import *
 from boid import Boid
 from config import Config
 from vector import Vector2D
@@ -30,21 +32,54 @@ def draw_scene(window, boids):
     pygame.display.flip()
 
 
+def preprocessSearch(boids):
+    boidsByX = sorted(boids, key=lambda boid: boid.pos.x)
+    boidsByY = sorted(boids, key=lambda boid: boid.pos.y)
+
+    boidKeysByX = [boid.pos.x for boid in boidsByX]
+    boidKeysByY = [boid.pos.y for boid in boidsByY]
+
+    return (boidsByX, boidKeysByX, boidsByY, boidKeysByY)
+
+
+def candidatesInRange(sortedBoids, sortedKeys, boid, limit, axis, radius):
+    right_bound, left_bound = plus_minus(operator.attrgetter(axis)(boid.pos), radius)
+
+    if 0 < left_bound and right_bound < limit:
+        invert = False
+    else:
+        invert = True
+        left_bound %= limit
+        right_bound %= limit
+
+    left_index, right_index = bisect.bisect_left(sortedKeys, left_bound), bisect.bisect_right(sortedKeys, right_bound)
+
+    return sortedBoids[:right_index + 1] + sortedBoids[left_index:] if invert else sortedBoids[left_index:right_index + 1]
+
+
 def main():
     window = pygame.display.set_mode((Config.SCREEN_X, Config.SCREEN_Y))
     pygame.display.set_caption('Boids')
     clock = pygame.time.Clock()
 
-    boids = [Boid() for _ in range(50)]
+    boids = [Boid() for _ in range(Config.NUM_BOIDS)]
     mouseDown = False
 
     active = True
     while active:
         dt = clock.tick()
 
+        boidsByX, boidKeysByX, boidsByY, boidKeysByY = preprocessSearch(boids)
+
         for boid in boids:
-            nbors = [other for other in boids if other is not boid and boid.can_see(other)]
-            closeNbors = [other for other in nbors if boid.dist_squared(other) < 50**2]
+
+            xCandidates = candidatesInRange(boidsByX, boidKeysByX, boid, Config.SCREEN_X, 'x', Config.VIEW_RADIUS // 2)
+            yCandidates = candidatesInRange(boidsByY, boidKeysByY, boid, Config.SCREEN_Y, 'y', Config.VIEW_RADIUS // 2)
+
+            rectNbors = set(xCandidates) & set(yCandidates) - set([boid])
+
+            nbors = [other for other in rectNbors if boid.can_see(other)]
+            closeNbors = [other for other in nbors if boid.is_close(other)]
 
             # Rules affecting boids with neighbours
             if nbors:
@@ -62,7 +97,7 @@ def main():
                     y = sum(math.sin(other.vel.direction) for other in nbors)
                     x = sum(math.cos(other.vel.direction) for other in nbors)
                     meanAngle = math.atan2(y, x)
-                    boid.turn_by(utils.neg_mod(meanAngle - boid.vel.direction, math.pi) * dt / 10000)
+                    boid.turn_by(neg_mod(meanAngle - boid.vel.direction, math.pi) * dt / 10000)
 
             # Rules affecting all boids
             # Run away from cursor on mouse down.
@@ -73,6 +108,7 @@ def main():
             # Clamp velocity just in case it changes (it shouldn't)
             boid.vel = boid.vel.normalized() * Config.MAX_SPEED
 
+        for boid in boids:
             boid.step(dt)
 
         draw_scene(window, boids)

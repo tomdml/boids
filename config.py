@@ -10,6 +10,8 @@ class Config():
 
     MAX_SPEED = 200  # Px per S
 
+    NUM_BOIDS = 150
+
     RULE1 = True
     RULE2 = True
     RULE3 = True

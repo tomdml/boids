@@ -1,6 +1,5 @@
 import math
 from random import randint, uniform
-from collections import namedtuple
 
 import utils
 from config import Config
@@ -64,6 +63,9 @@ class Boid():
         fov = math.radians(Config.FOV)
         angleToOther = utils.neg_mod(selfHeading - relativeHeading, math.pi)
         return angleToOther < (fov / 2)
+
+    def is_close(self, other):
+        return self.dist_squared(other) > (Config.VIEW_RADIUS / 3)**2
 
     def turn_by(self, rad):
         if abs(rad) > 0.05:
