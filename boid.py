@@ -30,33 +30,27 @@ class Boid():
 
     @pos.setter
     def pos(self, new):
-        self._pos = (new % (Config.SCREEN_X, Config.SCREEN_Y))
+        self._pos = new % (Config.SCREEN_X, Config.SCREEN_Y)
 
     def step(self, dt):
-        self.pos += self.vel * (dt / 1000)
+        self.pos += self.vel * (dt / 1000)  # dt in milliseconds
         self.vel = self.vel.rotate(self.turn * dt / 3)
         self.turn = 0
 
-    def dist(self, other):
+    def approx_dist(self, other):
         x, y = (other.pos - self.pos)
         if x / Config.SCREEN_X > 0.5:
             x = Config.SCREEN_X - x
         if y / Config.SCREEN_Y > 0.5:
             y = Config.SCREEN_Y - y
-        return Vector2D(x, y).magnitude
-
-    def dist_squared(self, other):
-        x, y = (other.pos - self.pos)
-        if x / Config.SCREEN_X > 0.5:
-            x = Config.SCREEN_X - x
-        if y / Config.SCREEN_Y > 0.5:
-            y = Config.SCREEN_Y - y
-        return Vector2D(x, y).mag_squared
+        # Reference: https://www.flipcode.com/archives/Fast_Approximate_Distance_Functions.shtml
+        return (1007 / 1024 * max(abs(x), abs(y))) + (441 / 1024 * min(abs(x), abs(y)))
 
     def can_see(self, other):
         # Short-circuit here if outside of view radius. Don't bother using sqrt for optimization.
-        if self.dist_squared(other) > Config.VIEW_RADIUS**2:
+        if self.approx_dist(other) > Config.VIEW_RADIUS:
             return False
+
         # Check FOV
         selfHeading = self.vel.direction
         relativeHeading = (other.pos - self.pos).direction
@@ -65,7 +59,7 @@ class Boid():
         return angleToOther < (fov / 2)
 
     def is_close(self, other):
-        return self.dist_squared(other) > (Config.VIEW_RADIUS / 3)**2
+        return self.approx_dist(other) > Config.VIEW_RADIUS / 3
 
     def turn_by(self, rad):
         if abs(rad) > 0.05:
@@ -76,9 +70,6 @@ class Boid():
         angle = (otherPos - self.pos).direction
         error = utils.neg_mod(angle - self.vel.direction, math.pi)
         self.turn_by(magnitude * error / 1000)
-
-    def turn_inwards(self, distance):
-        self.turn_to(Vector2D(Config.SCREEN_RADIUS, Config.SCREEN_RADIUS), magnitude=distance)
 
     # Display functions
 

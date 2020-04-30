@@ -10,7 +10,9 @@ class Config():
 
     MAX_SPEED = 200  # Px per S
 
-    NUM_BOIDS = 150
+    MAX_NBORS = 6
+
+    NUM_BOIDS = 250
 
     RULE1 = True
     RULE2 = True
@@ -18,7 +20,6 @@ class Config():
 
 
 # TODO:
-# Bucket optimization
 # Predators
 # Sliders
 #  - Presets

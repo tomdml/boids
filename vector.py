@@ -21,10 +21,6 @@ class Vector2D():
     def magnitude(self):
         return (self.x**2 + self.y**2)**0.5
 
-    @property
-    def mag_squared(self):
-        return (self.x**2 + self.y**2)
-
     def normalized(self):
         return self / self.magnitude
 
@@ -36,11 +32,13 @@ class Vector2D():
     # Arithmetic Operations #
 
     def __add__(self, other):
-        if not other: return self
         return Vector2D(self.x + other.x, self.y + other.y)
 
     def __radd__(self, other):
-        return self.__add__(other)
+        if other:
+            return self.__add__(other)
+        else:
+            return self
 
     def __sub__(self, other):
         return self + -other
@@ -70,6 +68,7 @@ class Vector2D():
     def __len__(self):
         return 2
 
+    # Required for unpacking
     def __getitem__(self, i):
         # return self.y if i else self.x
-        return (self.x, self.y)[i]
+        return (int(self.x), int(self.y))[i]
