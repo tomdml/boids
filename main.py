@@ -165,5 +165,5 @@ def main():
 
 
 if __name__ == '__main__':
-    # main()
-    profile.run('main()', sort='tottime')
+    main()
+    # profile.run('main()', sort='tottime')
